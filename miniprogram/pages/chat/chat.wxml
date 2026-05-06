@@ -2,12 +2,9 @@
   <!-- 顶栏：与 ChatPage 一致 -->
   <view class="custom-header" style="padding-top: {{statusBarHeight}}px;">
     <view class="header-row">
-      <view class="logo-box" aria-label="图标占位">LOGO</view>
       <view class="header-title-wrap">
-        <text class="header-title">天府长岛元创助手</text>
+        <text class="header-title">Novi</text>
       </view>
-      <!-- 与左侧 LOGO 同宽占位，保证标题视觉居中 -->
-      <view class="header-spacer"></view>
     </view>
   </view>
 

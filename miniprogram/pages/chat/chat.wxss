@@ -25,40 +25,18 @@
   min-height: 72rpx;
 }
 
-.logo-box {
-  flex-shrink: 0;
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: 16rpx;
-  border: 1rpx dashed rgba(0, 0, 0, 0.25);
-  background-color: #fff;
-  color: #333;
-  font-size: 20rpx;
-  letter-spacing: 0.05em;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .header-title-wrap {
   flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-top: 4rpx;
+  width: 100%;
 }
 
 .header-title {
   font-size: 34rpx;
   font-weight: 600;
   color: #111;
-}
-
-/* 与 logo-box 同宽，标题保持居中 */
-.header-spacer {
-  flex-shrink: 0;
-  width: 72rpx;
-  height: 72rpx;
 }
 
 /* 消息列表 */
