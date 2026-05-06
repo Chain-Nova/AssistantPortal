@@ -64,12 +64,25 @@
       </view>
     </block>
     <block wx:else>
-      <view class="hangup-btn" bindtap="handleHangup" aria-label="挂断">
-        <image
-          class="footer-icon-img"
-          src="/assets/icon-phone-off.svg"
-          mode="aspectFit"
-        />
+      <view class="action-row">
+        <view
+          class="interrupt-btn"
+          bindtap="handleInterruptTap"
+          aria-label="打断并重新聆听"
+        >
+          <image
+            class="footer-icon-img"
+            src="/assets/icon-interrupt.svg"
+            mode="aspectFit"
+          />
+        </view>
+        <view class="hangup-btn" bindtap="handleHangup" aria-label="挂断">
+          <image
+            class="footer-icon-img"
+            src="/assets/icon-phone-off.svg"
+            mode="aspectFit"
+          />
+        </view>
       </view>
     </block>
     <text class="status-text">{{isError ? '点击重试' : statusText}}</text>

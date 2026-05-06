@@ -26,13 +26,9 @@ var MAX_REVEAL_CHARS_PER_TICK = 3;
 var CONNECTION_TIMEOUT_MS = 8000;
 var BRIDGE_READY_TIMEOUT_MS = 25000;
 var AUTO_CONNECT_DELAY_MS = 150;
-var INTERRUPT_MIN_PLAYING_MS = 200;
-var INTERRUPT_CONFIRM_WINDOW_MS = 700;
-var INTERRUPT_REQUIRE_SECOND_CONFIRM = true;
-var INTERRUPT_STRONG_VOICE_MS = 220;
 var LOCAL_INTERRUPT_DROP_AUDIO_MS = 1500;
-var INTERRUPT_RECENT_AUDIO_MS = 1800;
 var TURN_STALL_TIMEOUT_MS = 8000;
+var ASSISTANT_SPEAKING_HOLD_MS = 420;
 var VAD_TUNING = {
   threshold: 0.038,
   cooldownMs: 900,
@@ -73,6 +69,7 @@ Page({
     latestUserText: '',
     modelText: '',
     isThinking: false,
+    isAssistantSpeaking: false,
     avatarLottiePath: '/assets/avatar.json',
     avatarLottieLoop: false,
   },
@@ -110,6 +107,8 @@ Page({
   _lastInboundAudioAt: 0,
   _micBypassSquelchUntil: 0,
   _lastTurnActivityAt: 0,
+  _assistantSpeakingUntil: 0,
+  _micListeningEnabled: true,
 
   // 去重
   _lastAssistantFinalDoneTurnId: null,
@@ -263,84 +262,7 @@ Page({
           self._ws.send(bytes);
         },
         onVoiceActivity: function (vadMeta) {
-          var now = Date.now();
-          self._assistantMicSquelchUntil = 0;
-
-          if (!self._ws || self._ws.readyState !== 1) return;
-          var playerPlaying = !!(self._player && self._player.isPlaying());
-          var hasAudioBudget = self._audioTimeBudget > 0.08;
-          var hasRecentInboundAudio =
-            self._lastInboundAudioAt > 0 &&
-            now - self._lastInboundAudioAt <= INTERRUPT_RECENT_AUDIO_MS;
-          if (!playerPlaying && !hasAudioBudget && !hasRecentInboundAudio) {
-            self._debug('interrupt_reject_not_playing', {
-              vadMeta: vadMeta || {},
-              playerPlaying: playerPlaying,
-              hasAudioBudget: hasAudioBudget,
-              audioTimeBudget: self._audioTimeBudget,
-              msSinceInboundAudio: self._lastInboundAudioAt
-                ? now - self._lastInboundAudioAt
-                : -1,
-            });
-            return;
-          }
-
-          var speechMs = Number((vadMeta && vadMeta.speechMs) || 0);
-          var playedMs = self._playerStartedAt
-            ? now - self._playerStartedAt
-            : 0;
-          var strongVoice = speechMs >= INTERRUPT_STRONG_VOICE_MS;
-          var stablePlaying = playedMs >= INTERRUPT_MIN_PLAYING_MS;
-
-          if (!stablePlaying && !strongVoice) {
-            self._debug('interrupt_reject', {
-              reason: 'player_not_stable',
-              playedMs: playedMs,
-              minPlayingMs: INTERRUPT_MIN_PLAYING_MS,
-              speechMs: speechMs,
-            });
-            // 播放未稳定时降级为二次确认，而不是直接拒绝，避免长期无法打断
-            self._pendingInterruptConfirmAt = now;
-          }
-
-          if (strongVoice) {
-            self._debug('interrupt_allow_strong_voice', {
-              speechMs: speechMs,
-              playedMs: playedMs,
-            });
-          } else if (INTERRUPT_REQUIRE_SECOND_CONFIRM) {
-            if (
-              !self._pendingInterruptConfirmAt ||
-              now - self._pendingInterruptConfirmAt > INTERRUPT_CONFIRM_WINDOW_MS
-            ) {
-              self._pendingInterruptConfirmAt = now;
-              self._debug('interrupt_confirm_armed', {
-                vadMeta: vadMeta || {},
-                windowMs: INTERRUPT_CONFIRM_WINDOW_MS,
-              });
-              return;
-            }
-            self._debug('interrupt_allow_confirmed', {
-              speechMs: speechMs,
-              playedMs: playedMs,
-              confirmDeltaMs: now - self._pendingInterruptConfirmAt,
-            });
-          }
-
-          if (now - self._lastInterruptAt < 500) {
-            self._debug('interrupt_reject_throttle', {
-              deltaMs: now - self._lastInterruptAt,
-            });
-            return;
-          }
-          self._lastInterruptAt = now;
-          self._pendingInterruptConfirmAt = 0;
-          self._dropInboundAudioUntil = now + LOCAL_INTERRUPT_DROP_AUDIO_MS;
-          self._micBypassSquelchUntil = now + 1200;
-
-          self._player.stop();
-          self._audioTimeBudget = 0;
-          self._ws.send(JSON.stringify({ type: 'interrupt' }));
+          self._debug('vad_activity_ignored', vadMeta || {});
         },
         onStart: function () {
           self._debug('recorder_start_ok');
@@ -466,6 +388,9 @@ Page({
     this._lastInboundAudioAt = 0;
     this._micBypassSquelchUntil = 0;
     this._lastTurnActivityAt = 0;
+    this._assistantSpeakingUntil = 0;
+    this._setAssistantSpeaking(false);
+    this._setMicListeningEnabled(true);
   },
 
   _cleanup: function () {
@@ -550,6 +475,7 @@ Page({
         return;
       }
       this._lastInboundAudioAt = nowTs;
+      this._markAssistantSpeaking();
       var base64Audio = wx.arrayBufferToBase64(data);
 
       if (this._player) {
@@ -945,6 +871,7 @@ Page({
   },
 
   _tickReveal: function () {
+    this._refreshSpeakingState();
     if (this._audioTimeBudget <= 0) return;
     var tickSeconds = Math.min(this._audioTimeBudget, 0.1);
     this._audioTimeBudget -= tickSeconds;
@@ -993,6 +920,8 @@ Page({
     this._lastFinalUserAsr = '';
     this._micBypassSquelchUntil = 0;
     this._lastTurnActivityAt = 0;
+    this._assistantSpeakingUntil = 0;
+    this._setAssistantSpeaking(false);
   },
 
   _startTurnWatchdog: function (session) {
@@ -1106,6 +1035,10 @@ Page({
     }, 100);
   },
 
+  handleInterruptTap: function () {
+    this._sendInterrupt('button_tap');
+  },
+
   // ============================================================
   // Lottie 动画控制
   // ============================================================
@@ -1172,6 +1105,63 @@ Page({
     }
   },
 
+  _setMicListeningEnabled: function (enabled) {
+    var next = enabled !== false;
+    if (this._micListeningEnabled === next) return;
+    this._micListeningEnabled = next;
+    if (
+      this._recorder &&
+      typeof this._recorder.setListeningEnabled === 'function'
+    ) {
+      this._recorder.setListeningEnabled(next);
+    }
+  },
+
+  _setAssistantSpeaking: function (speaking) {
+    var val = !!speaking;
+    if (this.data.isAssistantSpeaking === val) return;
+    this.setData({ isAssistantSpeaking: val });
+  },
+
+  _refreshSpeakingState: function () {
+    var now = Date.now();
+    var playerPlaying = !!(this._player && this._player.isPlaying());
+    var recentlyInbound =
+      this._assistantSpeakingUntil > 0 && now < this._assistantSpeakingUntil;
+    var speaking = playerPlaying || recentlyInbound || this._audioTimeBudget > 0.06;
+    this._setAssistantSpeaking(speaking);
+    this._setMicListeningEnabled(!speaking);
+  },
+
+  _markAssistantSpeaking: function () {
+    this._assistantSpeakingUntil = Date.now() + ASSISTANT_SPEAKING_HOLD_MS;
+    this._refreshSpeakingState();
+  },
+
+  _sendInterrupt: function (source) {
+    if (!this._ws || this._ws.readyState !== 1) return;
+    var now = Date.now();
+    if (now - this._lastInterruptAt < 350) return;
+    this._lastInterruptAt = now;
+    this._pendingInterruptConfirmAt = 0;
+    this._dropInboundAudioUntil = now + LOCAL_INTERRUPT_DROP_AUDIO_MS;
+    this._micBypassSquelchUntil = now + 400;
+    if (this._player) {
+      this._player.stop();
+    }
+    this._audioTimeBudget = 0;
+    this._assistantSpeakingUntil = 0;
+    this._finalizeActiveTurn();
+    this.setData({
+      latestUserText: '',
+      modelText: '',
+      isThinking: false,
+    });
+    this._setState('connected');
+    this._refreshSpeakingState();
+    this._ws.send(JSON.stringify({ type: 'interrupt', source: source || 'button' }));
+  },
+
   _startMicAfterBridge: function (session, self) {
     self = self || this;
     if (!this._recorder || typeof this._recorder.start !== 'function') {
@@ -1194,6 +1184,7 @@ Page({
         self._lastTurnActivityAt = 0;
         self._debug('phase', { phase: self._connectionPhase });
         self._playChime('/assets/connect.wav');
+        self._setMicListeningEnabled(true);
         if (self._revealTimer) {
           clearInterval(self._revealTimer);
         }
@@ -1288,7 +1279,7 @@ Page({
           : '连接中';
 
     var statusText = isConnected
-      ? '通话中 · 点击挂断'
+      ? '通话中 · 可打断或挂断'
       : state === 'error'
         ? '连接失败'
         : state === 'connecting'

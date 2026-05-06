@@ -27,6 +27,7 @@ function AudioRecorder(options) {
   this._onFatal = options.onFatal || function () {};
   this._isRecording = false;
   this._isStarting = false;
+  this._isListeningEnabled = true;
   this._startResolve = null;
   this._startReject = null;
 
@@ -55,6 +56,7 @@ function AudioRecorder(options) {
   // 帧回调：实时获取 PCM 数据
   this._manager.onFrameRecorded(function (res) {
     if (!self._isRecording) return;
+    if (!self._isListeningEnabled) return;
 
     var frameBuffer = res.frameBuffer; // ArrayBuffer (PCM s16le)
 
@@ -271,6 +273,13 @@ AudioRecorder.prototype.stop = function () {
   } catch (e) {
     // ignore
   }
+};
+
+/**
+ * 控制是否接收麦克风帧（关闭时不会触发 onData / VAD）
+ */
+AudioRecorder.prototype.setListeningEnabled = function (enabled) {
+  this._isListeningEnabled = enabled !== false;
 };
 
 module.exports = { AudioRecorder };
