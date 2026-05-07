@@ -4,6 +4,7 @@
  */
 var { streamTextQuery } = require('../../utils/text-sse');
 var { generateUUID } = require('../../utils/uuid');
+var welcomeConfig = require('../../welcome-config.js');
 var app = getApp();
 
 Page({
@@ -14,6 +15,9 @@ Page({
     showWelcome: true,
     scrollTarget: '',
     statusBarHeight: 24,
+    recommendedQuestions: welcomeConfig.recommendedQuestions,
+    welcomeTitle: welcomeConfig.welcomeTitle,
+    welcomeSubtitle: welcomeConfig.welcomeSubtitle,
   },
 
   _abortFn: null,
@@ -57,8 +61,24 @@ Page({
   sendText: function () {
     var text = (this.data.input || '').trim();
     if (!text || this.data.sending) return;
+    this.setData({ input: '' });
+    this._sendMessage(text);
+  },
 
-    this.setData({ input: '', sending: true });
+  /** 点击推荐问题卡片，直接发起对话 */
+  onRecommendTap: function (e) {
+    var text = (e.currentTarget.dataset.text || '').trim();
+    if (!text || this.data.sending) return;
+    this._sendMessage(text);
+  },
+
+  /**
+   * @param {string} text 已 trim 的用户文案
+   */
+  _sendMessage: function (text) {
+    if (!text || this.data.sending) return;
+
+    this.setData({ sending: true });
 
     var userId = generateUUID();
     var asstId = generateUUID();

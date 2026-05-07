@@ -15,15 +15,35 @@
     scroll-with-animation
   >
     <block wx:if="{{messages.length === 0}}">
-      <view class="welcome-container">
-        <lottie
-          wx:if="{{showWelcome}}"
-          path="/assets/hi.json"
-          width="{{200}}"
-          height="{{200}}"
-          autoplay
-          loop
-        />
+      <view class="welcome-screen">
+        <view class="welcome-hero">
+          <lottie
+            wx:if="{{showWelcome}}"
+            path="/assets/hi.json"
+            width="{{180}}"
+            height="{{180}}"
+            autoplay
+            loop
+          />
+          <text class="welcome-title">{{welcomeTitle}}</text>
+          <text class="welcome-subtitle">{{welcomeSubtitle}}</text>
+        </view>
+
+        <view class="recommend-section">
+          <text class="recommend-label">试试这样问</text>
+          <view class="recommend-cards">
+            <view
+              wx:for="{{recommendedQuestions}}"
+              wx:key="id"
+              class="recommend-card"
+              hover-class="recommend-card-hover"
+              bindtap="onRecommendTap"
+              data-text="{{item.text}}"
+            >
+              <text class="recommend-card-text">{{item.text}}</text>
+            </view>
+          </view>
+        </view>
       </view>
     </block>
 

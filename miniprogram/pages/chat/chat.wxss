@@ -47,12 +47,78 @@
   box-sizing: border-box;
 }
 
-.welcome-container {
+/* 空会话：欢迎区 + 推荐问题卡片 */
+.welcome-screen {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding-bottom: 48rpx;
+  box-sizing: border-box;
+}
+
+.welcome-hero {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-height: 520rpx;
-  height: 100%;
+  padding-top: 8rpx;
+  padding-bottom: 32rpx;
+}
+
+.welcome-title {
+  margin-top: 8rpx;
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #111;
+  letter-spacing: 0.02em;
+}
+
+.welcome-subtitle {
+  margin-top: 16rpx;
+  padding-left: 8rpx;
+  padding-right: 8rpx;
+  font-size: 26rpx;
+  line-height: 1.55;
+  color: rgba(17, 17, 17, 0.55);
+  text-align: center;
+  max-width: 620rpx;
+}
+
+.recommend-section {
+  width: 100%;
+  margin-top: 16rpx;
+}
+
+.recommend-label {
+  display: block;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: rgba(17, 17, 17, 0.45);
+  margin-bottom: 20rpx;
+  padding-left: 4rpx;
+}
+
+.recommend-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.recommend-card {
+  background-color: #fff;
+  border-radius: 20rpx;
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
+  padding: 24rpx 28rpx;
+  box-shadow: 0 8rpx 28rpx rgba(0, 0, 0, 0.04);
+}
+
+.recommend-card-hover {
+  opacity: 0.88;
+}
+
+.recommend-card-text {
+  font-size: 28rpx;
+  line-height: 1.5;
+  color: #222;
 }
 
 .list-footer-spacer {
