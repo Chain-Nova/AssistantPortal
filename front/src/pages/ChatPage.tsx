@@ -3,7 +3,6 @@ import { DotLottie } from '@lottiefiles/dotlottie-web';
 import {
   AudioLines,
   Camera,
-  Copy,
   Keyboard,
   Mic,
   Plus,
@@ -23,6 +22,7 @@ export type ChatMessage = {
 
 type Props = {
   onOpenVoice: () => void;
+  onNewChat?: () => void;
   messages?: ChatMessage[];
   setMessages?: Dispatch<SetStateAction<ChatMessage[]>>;
   conversationId?: string;
@@ -30,6 +30,7 @@ type Props = {
 
 export function ChatPage({
   onOpenVoice,
+  onNewChat,
   messages = [],
   setMessages = () => {},
   conversationId = 'default',
@@ -242,6 +243,15 @@ export function ChatPage({
           </button>
         </div>
         <div className="flex items-center gap-1 shrink-0 mt-0.5">
+          {onNewChat ? (
+            <button
+              type="button"
+              onClick={onNewChat}
+              className="px-2.5 py-1 text-[14px] font-medium text-[#007b8f] rounded-lg hover:bg-black/[0.06] active:opacity-80"
+            >
+              新对话
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={async () => {
@@ -300,13 +310,6 @@ export function ChatPage({
                       <span className="inline-block w-1.5 h-4 ml-0.5 bg-black/[0.45] animate-pulse rounded-sm align-middle" />
                     ) : null}
                   </div>
-                  {!msg.streaming && msg.content ? (
-                    <div className="flex items-center gap-4 mt-3 pt-2 border-t border-black/[0.06] text-[#333]">
-                      <button type="button" className="p-1 hover:opacity-70" aria-label="复制">
-                        <Copy className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : null}
                 </div>
               )}
             </div>

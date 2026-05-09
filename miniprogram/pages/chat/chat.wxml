@@ -1,15 +1,38 @@
 <view class="page">
   <!-- 顶栏：与 ChatPage 一致 -->
-  <view class="custom-header" style="padding-top: {{statusBarHeight}}px;">
-    <view class="header-row">
-      <view class="header-title-wrap">
-        <text class="header-title">Novi</text>
+  <view
+    class="custom-header {{showWelcome ? 'custom-header--welcome' : ''}}"
+    style="padding-top: {{statusBarHeight}}px;"
+  >
+    <!-- 欢迎页：标题相对整屏宽度居中，不受右侧胶囊留白区域挤压 -->
+    <view wx:if="{{showWelcome}}" class="header-title-fullbleed">
+      <text class="header-title">Novi</text>
+    </view>
+    <!-- 会话中：按钮层与标题层分离，标题始终按整栏居中 -->
+    <view
+      wx:else
+      class="header-row"
+      style="padding-right: {{headerPaddingRightPx}}px;"
+    >
+      <view
+        class="new-chat-icon-btn"
+        bindtap="startNewChat"
+        hover-class="new-chat-icon-btn-hover"
+        aria-role="button"
+        aria-label="新对话"
+      >
+        <image class="new-chat-icon" src="/assets/icon-new-chat.svg" mode="aspectFit" />
       </view>
+      <view class="header-right-balance" aria-hidden="true"></view>
+    </view>
+    <view wx:if="{{!showWelcome}}" class="header-title-fullbleed header-title-fullbleed--overlay" aria-hidden="true">
+      <text class="header-title">Novi</text>
     </view>
   </view>
 
   <scroll-view
     class="message-list"
+    style="padding-bottom: {{listPaddingBottomPx}}px;"
     scroll-y
     scroll-into-view="{{scrollTarget}}"
     scroll-with-animation
@@ -64,18 +87,6 @@
             <text wx:elif="{{item.streaming}}">思考中...</text>
             <view wx:if="{{item.streaming}}" class="typing-cursor"></view>
           </view>
-          <view
-            wx:if="{{!item.streaming && item.content}}"
-            class="bubble-actions"
-          >
-            <view
-              class="copy-btn"
-              bindtap="copyMessage"
-              data-content="{{item.content}}"
-            >
-              <text class="copy-text">复制</text>
-            </view>
-          </view>
         </view>
       </view>
 
@@ -83,8 +94,11 @@
     </block>
   </scroll-view>
 
-  <!-- 底栏：输入 + 实时语音入口（键盘发送） -->
-  <view class="bottom-bar" style="padding-bottom: calc(16rpx + env(safe-area-inset-bottom));">
+  <!-- 底栏：输入 + 实时语音入口（键盘发送）；fixed + 键盘高度避免被遮挡 -->
+  <view
+    class="bottom-bar"
+    style="bottom: {{keyboardHeightPx}}px; padding-bottom: calc(16rpx + env(safe-area-inset-bottom));"
+  >
     <view class="input-shell">
       <input
         class="text-input"
@@ -95,6 +109,8 @@
         placeholder-style="color: #999;"
         confirm-type="send"
         disabled="{{sending}}"
+        adjust-position="{{false}}"
+        cursor-spacing="32"
         hold-keyboard
       />
       <view

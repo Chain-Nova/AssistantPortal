@@ -10,8 +10,13 @@ import { VoiceRealtimePage } from './pages/VoiceRealtimePage';
 export default function App() {
   const [view, setView] = useState<'chat' | 'voice'>('chat');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [conversationId] = useState(() => `c-${crypto.randomUUID()}`);
+  const [conversationId, setConversationId] = useState(() => `c-${crypto.randomUUID()}`);
   const pendingVoiceMessagesRef = useRef<ChatMessage[]>([]);
+
+  const handleNewChat = useCallback(() => {
+    setMessages([]);
+    setConversationId(`c-${crypto.randomUUID()}`);
+  }, []);
 
   const handleVoiceAssistantReply = useCallback((assistantText: string, userTranscript?: string) => {
     const assistant = assistantText.trim();
@@ -54,7 +59,9 @@ export default function App() {
 
   return (
     <ChatPage
+      key={conversationId}
       onOpenVoice={openVoice}
+      onNewChat={handleNewChat}
       messages={messages}
       setMessages={setMessages}
       conversationId={conversationId}

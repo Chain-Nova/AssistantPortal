@@ -14,36 +14,99 @@
   flex-shrink: 0;
   background-color: #f5f7fa;
   padding-left: 24rpx;
-  padding-right: 24rpx;
   padding-bottom: 24rpx;
+  position: relative;
+}
+
+/** 欢迎页去掉左右 padding，让标题在整栏宽度内居中（与胶囊区解耦） */
+.custom-header--welcome {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/** 欢迎页标题条：占满屏宽，flex 水平垂直居中 */
+.header-title-fullbleed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 72rpx;
+  box-sizing: border-box;
+}
+
+.header-title-fullbleed--overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 24rpx;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .header-row {
   display: flex;
   align-items: center;
-  gap: 24rpx;
-  min-height: 72rpx;
+  justify-content: space-between;
+  gap: 16rpx;
+  /* 与标题行高对齐，避免侧栏控件显得比字帽还高 */
+  min-height: 68rpx;
+  position: relative;
+  z-index: 2;
+}
+
+.new-chat-icon-btn {
+  width: 56rpx;
+  height: 56rpx;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  margin-right: 8rpx;
+  /* 略下移，与标题文字光学中心对齐（text 组件基线略偏下） */
+  transform: translateY(3rpx);
+}
+
+.new-chat-icon-btn-hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.new-chat-icon {
+  width: 36rpx;
+  height: 36rpx;
+  display: block;
 }
 
 .header-title-wrap {
   flex: 1;
+  min-width: 0;
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 100%;
+}
+
+/** 与左侧图标等宽，标题视觉居中 */
+.header-right-balance {
+  width: 56rpx;
+  height: 56rpx;
+  flex-shrink: 0;
+  margin-left: 8rpx;
 }
 
 .header-title {
   font-size: 34rpx;
   font-weight: 600;
   color: #111;
+  line-height: 1.25;
 }
 
-/* 消息列表 */
+/* 消息列表；底 padding 由内联控制，避让 fixed 底栏与键盘 */
 .message-list {
   flex: 1;
   min-height: 0;
-  padding: 24rpx 28rpx;
+  padding-top: 24rpx;
+  padding-left: 28rpx;
+  padding-right: 28rpx;
   box-sizing: border-box;
 }
 
@@ -179,28 +242,12 @@
   animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-.bubble-actions {
-  display: flex;
-  align-items: center;
-  gap: 24rpx;
-  margin-top: 16rpx;
-  padding-top: 12rpx;
-  border-top: 1rpx solid rgba(0, 0, 0, 0.06);
-  color: #333;
-}
-
-.copy-btn {
-  padding: 6rpx 8rpx;
-}
-
-.copy-text {
-  font-size: 24rpx;
-  color: #333;
-}
-
-/* 底栏 */
+/* 底栏：fixed 抬高，配合键盘高度避免遮挡 */
 .bottom-bar {
-  flex-shrink: 0;
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 200;
   background-color: #f5f7fa;
   padding-left: 24rpx;
   padding-right: 24rpx;
