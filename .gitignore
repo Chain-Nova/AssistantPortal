@@ -2,3 +2,6 @@ server/.env
 front/.env
 
 .history/
+
+**/__pycache__/
+*.pyc
