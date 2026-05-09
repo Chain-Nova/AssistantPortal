@@ -94,6 +94,19 @@ Page({
     }
   },
 
+  _hideKeyboard: function () {
+    try {
+      if (wx.hideKeyboard) {
+        wx.hideKeyboard({ fail: function () {} });
+      }
+    } catch (e) {}
+  },
+
+  /** 点击消息区、顶栏空白等区域收起键盘 */
+  onTapBlankHideKeyboard: function () {
+    this._hideKeyboard();
+  },
+
   _syncMessages: function () {
     var msgs = app.globalData.messages;
     this.setData({
@@ -117,6 +130,10 @@ Page({
 
   /** 点击推荐问题卡片，直接发起对话 */
   onRecommendTap: function (e) {
+    this._hideKeyboard();
+    if (wx.vibrateShort) {
+      wx.vibrateShort({ type: 'light' });
+    }
     var text = (e.currentTarget.dataset.text || '').trim();
     if (!text || this.data.sending) return;
     this._sendMessage(text);
@@ -207,6 +224,7 @@ Page({
 
   /** 清空会话并生成新的 conversation_id，与后端新线程对齐 */
   startNewChat: function () {
+    this._hideKeyboard();
     if (this._abortFn) {
       this._abortFn();
       this._abortFn = null;
@@ -219,6 +237,7 @@ Page({
   },
 
   openVoice: function () {
+    this._hideKeyboard();
     wx.authorize({
       scope: 'scope.record',
       success: function () {

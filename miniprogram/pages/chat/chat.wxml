@@ -3,6 +3,7 @@
   <view
     class="custom-header {{showWelcome ? 'custom-header--welcome' : ''}}"
     style="padding-top: {{statusBarHeight}}px;"
+    bindtap="onTapBlankHideKeyboard"
   >
     <!-- 欢迎页：标题相对整屏宽度居中，不受右侧胶囊留白区域挤压 -->
     <view wx:if="{{showWelcome}}" class="header-title-fullbleed">
@@ -16,7 +17,7 @@
     >
       <view
         class="new-chat-icon-btn"
-        bindtap="startNewChat"
+        catchtap="startNewChat"
         hover-class="new-chat-icon-btn-hover"
         aria-role="button"
         aria-label="新对话"
@@ -36,6 +37,7 @@
     scroll-y
     scroll-into-view="{{scrollTarget}}"
     scroll-with-animation
+    bindtap="onTapBlankHideKeyboard"
   >
     <block wx:if="{{messages.length === 0}}">
       <view class="welcome-screen">
@@ -60,7 +62,9 @@
               wx:key="id"
               class="recommend-card"
               hover-class="recommend-card-hover"
-              bindtap="onRecommendTap"
+              hover-start-time="20"
+              hover-stay-time="220"
+              catchtap="onRecommendTap"
               data-text="{{item.text}}"
             >
               <text class="recommend-card-text">{{item.text}}</text>

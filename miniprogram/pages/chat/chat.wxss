@@ -171,17 +171,28 @@
   border-radius: 20rpx;
   border: 1rpx solid rgba(0, 0, 0, 0.06);
   padding: 24rpx 28rpx;
-  box-shadow: 0 8rpx 28rpx rgba(0, 0, 0, 0.04);
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.04);
+  transition: transform 120ms ease-out, background-color 120ms ease-out, box-shadow 120ms ease-out,
+    border-color 120ms ease-out;
 }
 
 .recommend-card-hover {
-  opacity: 0.88;
+  transform: scale(0.985);
+  background-color: #f7f9fb;
+  border-color: rgba(0, 0, 0, 0.12);
+  box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.08);
+}
+
+.recommend-card-hover .recommend-card-text {
+  color: #222;
+  font-weight: 600;
 }
 
 .recommend-card-text {
   font-size: 28rpx;
   line-height: 1.5;
   color: #222;
+  transition: color 140ms ease, font-weight 140ms ease;
 }
 
 .list-footer-spacer {
