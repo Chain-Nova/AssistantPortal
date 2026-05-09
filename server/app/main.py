@@ -2,13 +2,14 @@ import asyncio
 import base64
 import json
 import logging
+import os
 import re
 import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from contextlib import suppress
-from typing import Any, Literal
+from typing import Any, Literal, Optional
 
 from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -39,6 +40,7 @@ STATIC_DIR = BASE_DIR / "static"
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 app.mount("/assets", StaticFiles(directory=str(STATIC_DIR / "assets"), check_dir=False), name="assets")
 CONFIG_PATH = BASE_DIR / "config.yaml"
+KNOWLEDGE_DIR = BASE_DIR / "knowledge"
 LOGGER = logging.getLogger("doubao.realtime")
 if LOGGER.level == logging.NOTSET:
     LOGGER.setLevel(logging.INFO)
@@ -76,6 +78,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
                 "业务角色：面向银行、保险、证券、信托等金融机构，提供 端到端智能体解决方案交付；覆盖智能交互、智能营销、智慧信贷、智能对公、智能文档、智能分析等核心场景；提供从咨询、设计、模型适配、应用开发到运维运营的全栈服务。"
                 "价值角色：成为金融机构 AI 转型的加速器与价值放大器；推动金融行业从 “云原生” 向 “AI 原生” 升级，降低智能化门槛，缩短价值实现周期；助力构建安全、合规、可信的金融 AI 新生态。"
                 "回答规则：你只回答与连接智能相关的问题。若用户问题与连接智能无关，请明确告知“该问题不在咨询范围内”，并建议用户咨询豆包、千问等通用助手。"
+                "体验说明：若用户问怎么体验、如何体验、怎样才能用上、怎样试用 Novi或小助手等，要明确、简要地告诉他：当前对话界面本身就是 Novi——他已在体验中；可继续打字提问，也可点右下角进入实时语音。"
+                "联系方式：对外商务/咨询仅通过邮箱 contact@chnova.net；用户问起联系公司、售前、商务或定制接入须如实给出该邮箱，勿改写。"
             )
         },
         "tts": {
@@ -119,7 +123,42 @@ def load_config() -> dict[str, Any]:
     return cfg
 
 
-APP_CONFIG = load_config()
+def _read_novi_intro_markdown_from_disk() -> str:
+    """Load optional Novi intro markdown; path overridable via NOVI_INTRO_MD_PATH."""
+    raw = os.getenv("NOVI_INTRO_MD_PATH", "").strip()
+    path = Path(raw).expanduser() if raw else KNOWLEDGE_DIR / "novi-assistant-intro.md"
+    if not path.is_file():
+        return ""
+    try:
+        body = path.read_text(encoding="utf-8").strip()
+    except OSError as exc:
+        LOGGER.warning("读取 Novi 知识 Markdown 失败 path=%s err=%s", path, exc)
+        return ""
+    return body
+
+
+def merge_novi_knowledge_into_config(cfg: dict[str, Any]) -> dict[str, Any]:
+    """
+    Append local Markdown knowledge to session.dialog.system_role (after YAML merge).
+
+    Use this for grounded answers about Novi / 产品介绍 without MCP; keep file size reasonable.
+    """
+    md = _read_novi_intro_markdown_from_disk()
+    if not md:
+        return cfg
+    session = cfg.setdefault("session", {})
+    dialog = session.setdefault("dialog", {})
+    base = str(dialog.get("system_role", "") or "").rstrip()
+    marker = (
+        "\n\n【以下内容来自项目内 Markdown 知识文档，回答与公司、Novi 助手、产品介绍相关的问题时以此为依据。"
+        "若与上文冲突以本文档为准。】\n"
+    )
+    dialog["system_role"] = base + marker + md
+    LOGGER.info("已将 Novi 知识 Markdown 并入 system_role（约 %d 字符）。", len(md))
+    return cfg
+
+
+APP_CONFIG = merge_novi_knowledge_into_config(load_config())
 CONVERSATION_STORE: dict[str, list[dict[str, Any]]] = {}
 CONVERSATION_LOCK = asyncio.Lock()
 
@@ -139,7 +178,7 @@ ORCHESTRATOR_PROMPT_SUFFIX = (
 class AgentChatRequest(BaseModel):
     content: str
     conversation_id: str = "default"
-    my_configurable_param: str | None = None
+    my_configurable_param: Optional[str] = None
 
 
 @app.on_event("startup")
@@ -172,7 +211,7 @@ def _sse(event: str, data: dict[str, Any]) -> str:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
-def _extract_upstream_error(payload: dict[str, Any]) -> str | None:
+def _extract_upstream_error(payload: dict[str, Any]) -> Optional[str]:
     """Normalize upstream error payloads into readable text."""
     raw = payload.get("error")
     if raw is None:
@@ -212,7 +251,7 @@ async def _get_dialog_context(conversation_id: str) -> list[dict[str, Any]]:
         return items[-(_context_max_rounds() * 2) :]
 
 
-def _extract_event350_tts_type(payload: dict[str, Any]) -> str | None:
+def _extract_event350_tts_type(payload: dict[str, Any]) -> Optional[str]:
     """event 350：与 demo/audio_manager 一致，从 payload_msg 或顶层读取 tts_type。"""
     v = payload.get("tts_type")
     if isinstance(v, str) and v:
@@ -232,7 +271,7 @@ def _extract_event350_tts_type(payload: dict[str, Any]) -> str | None:
     return None
 
 
-def _extract_asr_final_text(payload: dict[str, Any]) -> str | None:
+def _extract_asr_final_text(payload: dict[str, Any]) -> Optional[str]:
     """451 ASRResponse：取非流式（is_interim=false）的识别文本。参见豆包实时对话协议。"""
     results = payload.get("results")
     if not isinstance(results, list) or not results:
@@ -274,19 +313,19 @@ class TurnState:
     audio_completed: bool = False
     comfort_sent: bool = False
     comfort_audio_completed: bool = False
-    comfort_audio_event: asyncio.Event | None = None
+    comfort_audio_event: Optional[asyncio.Event] = None
     # comfort 切换瞬间的音频闸门，屏蔽上游抢跑残留音频（秒）
     comfort_audio_gate_until_ts: float = 0.0
     # 收口兜底：若上游未按预期触发最终 TTS ended 事件，
     # 则由 turn flow 超时后主动发出 assistant_final_done，避免前端永远等待。
-    final_done_event: asyncio.Event | None = None
+    final_done_event: Optional[asyncio.Event] = None
     assistant_final_done_sent: bool = False
     # 只允许在真正请求过 final_query 的情况下，把上游的 TTSEnded(153/359)
     # 归类为最终回复结束；避免 comfort/上游默认播报的 TTSEnded 被误当成 final。
     final_tts_requested: bool = False
     # event 350 且 tts_type 为 chat_tts_text/external_rag 时短暂丢弃转发音频，避免新旧 TTS 混叠（对齐 demo 清空播放队列）。
     bridge_audio_discard_until_ts: float = 0.0
-    task: asyncio.Task[Any] | None = None
+    task: Optional[asyncio.Task[Any]] = None
     # 在文本完成后若仍收到多余文本分片，只做一次打断，避免过度截断正常收口。
     post_text_extra_interrupted: bool = False
 
@@ -580,7 +619,7 @@ async def text_query_sse(
         user_query = content.strip()
         dialog_context = await _get_dialog_context(conversation_id)
         route = _classify_query_route(user_query)
-        graph_mode: str | None = None
+        graph_mode: Optional[str] = None
         graph_final_started = False
         graph_final_deadline_ts = 0.0
         session_cfg = _deep_merge(
@@ -766,9 +805,9 @@ async def realtime_bridge(ws: WebSocket) -> None:
     await ws.accept()
     client = build_client(APP_CONFIG)
     conversation_id = str(ws.query_params.get("conversation_id", "default")).strip() or "default"
-    active_turn: TurnState | None = None
-    last_voice_final_text: str | None = None
-    last_voice_final_norm: str | None = None
+    active_turn: Optional[TurnState] = None
+    last_voice_final_text: Optional[str] = None
+    last_voice_final_norm: Optional[str] = None
     last_voice_final_ts: float = 0.0
     current_voice_asr_cycle: int = 0
     last_voice_final_cycle: int = -1

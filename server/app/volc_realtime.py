@@ -1,7 +1,7 @@
 import json
 import struct
 import uuid
-from typing import Any
+from typing import Any, Optional, Union
 
 import websockets
 
@@ -60,14 +60,14 @@ class VolcRealtimeClient:
         self.bot_name = bot_name
         self.sample_rate = sample_rate
         self.model_version = model_version
-        self._conn: websockets.ClientConnection | None = None
+        self._conn: Optional[websockets.ClientConnection] = None
         self._session_id = str(uuid.uuid4())
 
     async def connect(self) -> None:
         self._conn = await websockets.connect(self.ws_url, additional_headers=self.headers)
         await self._send_event(self.EVENT_START_CONNECTION, {})
 
-    async def start_session(self, session_config: dict[str, Any] | None = None) -> None:
+    async def start_session(self, session_config: Optional[dict[str, Any]] = None) -> None:
         payload = {
             "dialog": {
                 "bot_name": self.bot_name,
@@ -110,7 +110,7 @@ class VolcRealtimeClient:
             is_session_event=True,
         )
 
-    async def recv(self) -> str | bytes:
+    async def recv(self) -> Union[str, bytes]:
         if not self._conn:
             raise RuntimeError("Upstream websocket is not connected.")
         message = await self._conn.recv()
@@ -197,7 +197,7 @@ class VolcRealtimeClient:
             optional += struct.pack(">I", len(sid)) + sid
         return header + optional + struct.pack(">I", len(payload_bytes)) + payload_bytes
 
-    def _decode_server_frame(self, frame: bytes) -> str | bytes:
+    def _decode_server_frame(self, frame: bytes) -> Union[str, bytes]:
         if len(frame) < 8:
             return frame
 
@@ -208,8 +208,8 @@ class VolcRealtimeClient:
         serialization = (byte2 >> 4) & 0x0F
 
         offset = 4
-        event: int | None = None
-        session_id: str | None = None
+        event: Optional[int] = None
+        session_id: Optional[str] = None
 
         if flags == self.FLAG_WITH_EVENT:
             event = struct.unpack(">I", frame[offset : offset + 4])[0]

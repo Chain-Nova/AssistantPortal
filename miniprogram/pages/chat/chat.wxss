@@ -210,37 +210,32 @@
 .input-shell {
   display: flex;
   align-items: center;
-  gap: 16rpx;
+  gap: 12rpx;
   border-radius: 44rpx;
   border: 1rpx solid rgba(0, 0, 0, 0.08);
   background-color: #fff;
-  padding: 16rpx 20rpx;
+  padding: 12rpx 14rpx 12rpx 24rpx;
 }
 
-.icon-tool {
+.voice-entry {
   flex-shrink: 0;
-  width: 64rpx;
-  height: 64rpx;
+  width: 80rpx;
+  height: 80rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
+  background: linear-gradient(145deg, #2c2c2c 0%, #161616 100%);
+  box-shadow: 0 6rpx 16rpx rgba(0, 0, 0, 0.12);
 }
 
-.tool-icon {
-  font-size: 40rpx;
-  color: #666;
-  line-height: 1;
-  font-weight: 300;
+.voice-entry-hover {
+  opacity: 0.92;
 }
 
-.icon-tool-phone {
-  margin-left: 4rpx;
-}
-
-.tool-icon-phone {
-  font-size: 44rpx;
-  color: #333;
+.voice-entry-icon {
+  width: 42rpx;
+  height: 42rpx;
 }
 
 .text-input {
@@ -250,7 +245,7 @@
   line-height: 72rpx;
   font-size: 30rpx;
   color: #333;
-  padding: 0 8rpx;
+  padding: 0 12rpx 0 4rpx;
 }
 
 @keyframes pulse {

@@ -167,14 +167,6 @@ Page({
     }
   },
 
-  noopCamera: function () {
-    wx.showToast({ title: '相机功能开发中', icon: 'none', duration: 1500 });
-  },
-
-  noopMore: function () {
-    wx.showToast({ title: '更多功能开发中', icon: 'none', duration: 1500 });
-  },
-
   openVoice: function () {
     wx.authorize({
       scope: 'scope.record',
