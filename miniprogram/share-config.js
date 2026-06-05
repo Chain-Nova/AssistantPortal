@@ -18,5 +18,5 @@ module.exports = {
     title: 'Novi',
     query: '',
   },
-  // imageUrl: '/assets/share-cover.png',
+  imageUrl: '/assets/Novi-logo.png',
 };
