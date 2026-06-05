@@ -8,5 +8,5 @@
  * 真机调试须改为局域网 IP（如 http://192.168.1.x:8000）且与电脑同网。
  */
 module.exports = {
-  apiBaseUrl: 'http://172.31.0.13:8000',
+  apiBaseUrl: 'https://fg.assistant.chainnv.com',
 };

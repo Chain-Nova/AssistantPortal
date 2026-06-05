@@ -77,14 +77,6 @@
   display: block;
 }
 
-.header-title-wrap {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
 /** 与左侧图标等宽，标题视觉居中 */
 .header-right-balance {
   width: 56rpx;

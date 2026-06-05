@@ -1,5 +1,7 @@
 {
   "navigationStyle": "custom",
+  "enableShareAppMessage": true,
+  "enableShareTimeline": true,
   "usingComponents": {
     "lottie": "/components/lottie/lottie"
   }

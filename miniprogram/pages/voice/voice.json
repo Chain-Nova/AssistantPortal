@@ -1,6 +1,8 @@
 {
+  "navigationStyle": "custom",
+  "enableShareAppMessage": true,
+  "enableShareTimeline": false,
   "usingComponents": {
     "lottie": "/components/lottie/lottie"
-  },
-  "navigationStyle": "custom"
+  }
 }

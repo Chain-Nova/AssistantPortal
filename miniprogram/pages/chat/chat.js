@@ -4,6 +4,11 @@
  */
 var { streamTextQuery } = require('../../utils/text-sse');
 var { generateUUID } = require('../../utils/uuid');
+var {
+  buildShareAppMessage,
+  buildShareTimeline,
+  buildAddToFavorites,
+} = require('../../utils/share');
 var welcomeConfig = require('../../welcome-config.js');
 var app = getApp();
 
@@ -73,9 +78,33 @@ Page({
     }
 
     this._syncMessages();
+    this._enableShareMenu();
+  },
+
+  /** 开启右上角「转发」「分享到朋友圈」菜单 */
+  _enableShareMenu: function () {
+    if (!wx.showShareMenu) return;
+    wx.showShareMenu({
+      withShareTicket: false,
+      menus: ['shareAppMessage', 'shareTimeline'],
+      fail: function () {},
+    });
+  },
+
+  onShareAppMessage: function () {
+    return buildShareAppMessage({ page: 'chat' });
+  },
+
+  onShareTimeline: function () {
+    return buildShareTimeline();
+  },
+
+  onAddToFavorites: function () {
+    return buildAddToFavorites();
   },
 
   onShow: function () {
+    this._enableShareMenu();
     app.mergeVoiceMessages();
     this._syncMessages();
   },

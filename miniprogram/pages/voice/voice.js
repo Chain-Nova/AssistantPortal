@@ -11,6 +11,7 @@ var { AudioRecorder } = require('../../utils/audio-recorder');
 var { resolveRealtimeWsUrl } = require('../../utils/api');
 var { releaseWebSocket } = require('../../utils/ws-release');
 var { generateUUID } = require('../../utils/uuid');
+var { buildShareAppMessage } = require('../../utils/share');
 var app = getApp();
 
 // Lottie 动画片段帧数
@@ -138,10 +139,26 @@ Page({
     this._isPageVisible = true;
     this._conversationId = app.globalData.conversationId;
     this._setAvatarAnim('intro');
+    this._enableShareMenu();
     this._connectWithPermission();
   },
 
+  _enableShareMenu: function () {
+    if (!wx.showShareMenu) return;
+    wx.showShareMenu({
+      withShareTicket: false,
+      menus: ['shareAppMessage'],
+      fail: function () {},
+    });
+  },
+
+  /** 通话页转发：卡片指向聊天首页，避免好友打开即进入通话流程 */
+  onShareAppMessage: function () {
+    return buildShareAppMessage({ page: 'voice' });
+  },
+
   onShow: function () {
+    this._enableShareMenu();
     this._isPageVisible = true;
     if (!this._shouldReconnectOnShow || this._isHangingUp) return;
     this._shouldReconnectOnShow = false;
